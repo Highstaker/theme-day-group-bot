@@ -1,3 +1,7 @@
+with open("token.txt", 'r') as f:
+	BOT_TOKEN = f.read()
+
+
 bot = dict(
-    token = 'insert token here',
-)
+	token = BOT_TOKEN,
+	)
