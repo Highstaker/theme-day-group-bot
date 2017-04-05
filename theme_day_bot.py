@@ -13,6 +13,7 @@ import logging
 from datetime import datetime, timedelta
 import pickle
 
+from telegram import TelegramError
 from telegram.ext import Updater, CommandHandler, Job, JobQueue
 
 import config
@@ -21,7 +22,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					# level=logging.DEBUG)
 					level=logging.WARNING)
 
-VERSION = (0, 1, 4)
+VERSION = (0, 1, 5)
 
 
 def seconds_till_next_day():
@@ -130,13 +131,22 @@ Thanks for running me, and have a good day!
 			#the message to edit is no longer available, let's make a new one.
 			#I'm not sure about the particular errors it may raise
 			#Maybe the condition checking needs to be expanded, dunno
-			# Another problem: an error is raised if it tries to edit a message and set the same text.
 			self.pinned_message_id = None
 			self.check_set_theme_day(bot)
 
 	def update_today_message(self, bot, update):
 		if self.bot_is_setup:
 			self.check_set_theme_day(bot)
+
+	def editPinnedMessage(self, bot, text):
+		# Prevents error that is raised when we try editing a message and applying the same text to it.
+		try:
+			bot.editMessageText(text=text, chat_id=self.group_chat_id, message_id=self.pinned_message_id)
+		except TelegramError, e:
+			if "message is not modified" in str(e):
+				logging.warning("message is the same")
+			else:
+				raise e
 
 	def check_set_theme_day(self, bot, job=None, force_schedule=False):
 		weekday = get_weekday()
@@ -149,10 +159,10 @@ Thanks for running me, and have a good day!
 
 		msg += "\n\nPIN THIS MESSAGE!" 
 
-		msg = str(time()) + msg # debug
+		# msg = str(time()) + msg # debug
 
 		if self.pinned_message_id:
-			bot.editMessageText(text=msg, chat_id=self.group_chat_id, message_id=self.pinned_message_id)
+			self.editPinnedMessage(bot, text=msg)
 		else:
 			sent_message = bot.sendMessage(chat_id=self.group_chat_id, text=msg)
 			self.pinned_message_id = sent_message.message_id
