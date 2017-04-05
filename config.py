@@ -6,6 +6,8 @@ with open("token.txt", 'r') as f:
 
 DAY_MARGIN = 5  # seconds to add to the next day to guarantee that it fires the next day
 
+CHAT_DATA_FILENAME = "chat_data.save"
+
 def theme_day_constructor(name, desc=""):
 	return dict(name=name,
 		desc=desc,

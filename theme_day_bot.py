@@ -7,18 +7,21 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
+#TODO: make it load gruop chat id and pinned message id from file on restart
 from time import time
 import logging
 from datetime import datetime, timedelta
+import pickle
 
 from telegram.ext import Updater, CommandHandler, Job, JobQueue
 
 import config
 
 logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(levelname)-8s  %(message)s',
-					level=logging.INFO)
+					# level=logging.DEBUG)
+					level=logging.WARNING)
 
-VERSION = (0, 1, 3)
+VERSION = (0, 1, 4)
 
 
 def seconds_till_next_day():
@@ -52,7 +55,37 @@ class ThemeDayBot(object):
 
 		self.pinned_message_id = None
 
+		self.load_chat_data()
+
 		self.run()
+
+	def setup_bot(self, bot, chat_id=None):
+		if chat_id:
+			self.group_chat_id = chat_id
+		# self.save_chat_data() # not needed in this version, but may be required in the future
+		self.check_set_theme_day(bot, force_schedule=True)
+		self.bot_is_setup = True
+
+	def load_chat_data(self):
+		try:
+			with open(config.CHAT_DATA_FILENAME, "r") as f:
+				data = pickle.load(f)
+			self.group_chat_id = data['group_chat_id']
+			self.pinned_message_id = data['pinned_message_id']
+			self.setup_bot(self.updater.bot)
+		except IOError:
+			logging.warning("No chat data savefile found. Need initialization!")
+			self.group_chat_id = None
+			self.pinned_message_id = None
+
+	def save_chat_data(self):
+		data = dict()
+
+		data['pinned_message_id'] = self.pinned_message_id
+		data['group_chat_id'] = self.group_chat_id
+
+		with open(config.CHAT_DATA_FILENAME, "w") as f:
+			pickle.dump(data, f)
 
 	def run(self):
 		self.updater.start_polling()
@@ -76,13 +109,11 @@ class ThemeDayBot(object):
 				if self.bot_is_setup:
 					msg = "The bot is already set up!"
 				else:
-					self.group_chat_id = chat_id
-					self.check_set_theme_day(bot, force_schedule=True)
+					self.setup_bot(bot, chat_id)
 					msg = """Hello, I am a bot that sets theme days for the Polyglot Furries Channel! 
 I have been set up to run this group! 
 Thanks for running me, and have a good day!
 """
-					self.bot_is_setup = True
 
 				bot.sendMessage(chat_id=update.message.chat_id, text=msg)
 
@@ -99,23 +130,12 @@ Thanks for running me, and have a good day!
 			#the message to edit is no longer available, let's make a new one.
 			#I'm not sure about the particular errors it may raise
 			#Maybe the condition checking needs to be expanded, dunno
+			# Another problem: an error is raised if it tries to edit a message and set the same text.
 			self.pinned_message_id = None
 			self.check_set_theme_day(bot)
 
 	def update_today_message(self, bot, update):
 		if self.bot_is_setup:
-			# try:
-			# 	# run it as a job from a queue and then remove it
-			# 	logging.debug(self.new_day_notify_job_queue.jobs())#debug
-			# 	job = self.new_day_notify_job_queue.jobs()[0]
-			# 	job.run(bot)
-			# 	job.schedule_removal()
-			# 	self.new_day_notify_job_queue.tick()
-			# 	#TODO: it won't remove the jobs! DX
-			# except IndexError:
-				# this should not happen, but if the queue is empty, then just run the function directly
-			
-			print self.new_day_notify_job_queue.jobs()#debug
 			self.check_set_theme_day(bot)
 
 	def check_set_theme_day(self, bot, job=None, force_schedule=False):
@@ -125,7 +145,7 @@ Thanks for running me, and have a good day!
 		if theme_day:
 			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
 		else:
-			msg = "No theme today." 
+			msg = u"No theme today." 
 
 		msg += "\n\nPIN THIS MESSAGE!" 
 
@@ -136,11 +156,11 @@ Thanks for running me, and have a good day!
 		else:
 			sent_message = bot.sendMessage(chat_id=self.group_chat_id, text=msg)
 			self.pinned_message_id = sent_message.message_id
+			self.save_chat_data()
 
 		if job or force_schedule:
 			# reset the job only if it is run by a job scheduler
 			interval = seconds_till_next_day()+config.DAY_MARGIN
-			# interval = 15#debug
 			next_job = Job(self.check_set_theme_day, interval=interval, repeat=False)
 			self.new_day_notify_job_queue.put(next_job)
 
