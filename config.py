@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 with open("token.txt", 'r') as f:
-	BOT_TOKEN = f.read()
+	BOT_TOKEN = f.read().strip()
 
 DAY_MARGIN = 5  # seconds to add to the next day to guarantee that it fires the next day
 

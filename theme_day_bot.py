@@ -22,7 +22,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					# level=logging.DEBUG)
 					level=logging.WARNING)
 
-VERSION = (0, 1, 5)
+VERSION = (0, 1, 6)
 
 
 def seconds_till_next_day():
