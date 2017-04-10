@@ -22,7 +22,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					# level=logging.DEBUG)
 					level=logging.WARNING)
 
-VERSION = (0, 1, 6)
+VERSION = (0, 1, 7)
 
 
 def seconds_till_next_day():
@@ -126,13 +126,14 @@ Thanks for running me, and have a good day!
 		bot.sendMessage(chat_id=update.message.chat_id, text=msg)
 
 	def error_handler(self, bot, update, error):
-		logging.warn('Update "%s" caused error "%s"' % (update, error))
-		if "/update" in update.message.text:
-			#the message to edit is no longer available, let's make a new one.
-			#I'm not sure about the particular errors it may raise
-			#Maybe the condition checking needs to be expanded, dunno
-			self.pinned_message_id = None
-			self.check_set_theme_day(bot)
+		if update:
+			logging.warning('Update "%s" caused error "%s"' % (update, error))
+			if "/update" in update.message.text:
+				#the message to edit is no longer available, let's make a new one.
+				#I'm not sure about the particular errors it may raise
+				#Maybe the condition checking needs to be expanded, dunno
+				self.pinned_message_id = None
+				self.check_set_theme_day(bot)
 
 	def update_today_message(self, bot, update):
 		if self.bot_is_setup:
