@@ -11,17 +11,27 @@ from time import time
 import logging
 from datetime import datetime, timedelta
 import pickle
+from argparse import ArgumentParser
 
 from telegram import TelegramError
 from telegram.ext import Updater, CommandHandler, Job, JobQueue
 
 import config
 
-logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(levelname)-8s  %(message)s',
-					level=logging.DEBUG)
-					# level=logging.WARNING)
+arg_parser = ArgumentParser()
+arg_parser.add_argument("--debug",  action='store_true', dest="debug_mode")
+args = arg_parser.parse_args()
 
-VERSION = (0, 1, 7)
+if args.debug_mode:
+	logging_level = logging.DEBUG
+else:
+	logging_level = logging.WARNING
+
+logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(levelname)-8s  %(message)s',
+					level=logging_level)
+
+
+VERSION = (0, 1, 8)
 
 
 def seconds_till_next_day():
