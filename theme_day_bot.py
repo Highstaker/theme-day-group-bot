@@ -7,7 +7,6 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
-#TODO: make it load gruop chat id and pinned message id from file on restart
 from time import time
 import logging
 from datetime import datetime, timedelta
@@ -19,8 +18,8 @@ from telegram.ext import Updater, CommandHandler, Job, JobQueue
 import config
 
 logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(levelname)-8s  %(message)s',
-					# level=logging.DEBUG)
-					level=logging.WARNING)
+					level=logging.DEBUG)
+					# level=logging.WARNING)
 
 VERSION = (0, 1, 7)
 
