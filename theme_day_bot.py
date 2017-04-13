@@ -32,7 +32,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 9)
+VERSION = (0, 1, 10)
 
 
 def seconds_till_next_day():
@@ -107,6 +107,22 @@ class ThemeDayBot(object):
 		self.updater.start_polling()
 		self.idle_with_exiter()
 
+	def isAdmin(self, bot, update):
+		"""
+		Returns True if the user in the update is admin. False otherwise.
+		Returns None if it is not a group chat.
+		"""
+		chat_id=update.message.chat_id
+		if chat_id < 0:
+			admins_list = bot.getChatAdministrators(chat_id)  # raises error in private chats
+			user_sent = update.message.from_user
+			user_id = user_sent.id
+			is_admin = user_id in [i.user.id for i in admins_list]
+			return is_admin
+		else:
+			return None
+
+
 	def start(self, bot, update):
 		chat_id=update.message.chat_id
 
@@ -116,10 +132,7 @@ class ThemeDayBot(object):
 			bot.sendMessage(chat_id=chat_id, text=msg)
 		else:
 			#it is a group chat
-			admins_list = bot.getChatAdministrators(chat_id)  # raises error in private chats
-			user_sent = update.message.from_user
-			user_id = user_sent.id
-			is_admin = user_id in [i.user.id for i in admins_list]
+			is_admin = self.isAdmin(bot, update)
 
 			if is_admin:
 				if self.bot_is_setup:
@@ -134,7 +147,9 @@ Thanks for running me, and have a good day!
 				bot.sendMessage(chat_id=update.message.chat_id, text=msg)
 
 	def help_function(self, bot, update):
-		bot.sendMessage(chat_id=update.message.chat_id, text='Commands that can be used are:\n /start - starts the bot (Admins Only)\n /help - gets the list of commands\n /startnoenglishtuesday - Tells bot to generate an automated message for the theme day \"No English Tuesday\" (Admin only)\n /themedaylist - returns a list with descriptions of current theme days')
+		is_admin = self.isAdmin(bot, update)
+		bot.sendMessage(chat_id=update.message.chat_id, text=config.HELP_TEXT \
+			+ (config.HELP_ADMINS if is_admin else ""))
 
 	def theme_day_list(self, bot, update):
 		msg = "\n".join(u"{0} - {1}".format(i['name'], i['desc']) for i in config.THEME_DAYS if i)
@@ -151,6 +166,9 @@ Thanks for running me, and have a good day!
 				self.check_set_theme_day(bot)
 
 	def update_today_message(self, bot, update):
+		"""A command to update the today's message.
+		Most likely users won't have to use it, as the bot can update it automatically.
+		"""
 		if self.bot_is_setup:
 			self.check_set_theme_day(bot)
 
