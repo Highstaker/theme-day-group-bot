@@ -1,0 +1,5 @@
+certifi==2017.1.23
+future==0.16.0
+python-telegram-bot==5.3.0
+urllib3==1.20
+wheel==0.24.0
