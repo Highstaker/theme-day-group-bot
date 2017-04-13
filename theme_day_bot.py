@@ -7,6 +7,7 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
+import os
 from time import time
 import logging
 from datetime import datetime, timedelta
@@ -31,7 +32,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 8)
+VERSION = (0, 1, 9)
 
 
 def seconds_till_next_day():
@@ -97,9 +98,14 @@ class ThemeDayBot(object):
 		with open(config.CHAT_DATA_FILENAME, "w") as f:
 			pickle.dump(data, f)
 
+	def idle_with_exiter(self):
+		"""Have to call hard exit, or else it freezes after exiting idle()"""
+		self.updater.idle()
+		os._exit(0)
+
 	def run(self):
 		self.updater.start_polling()
-		self.updater.idle()
+		self.idle_with_exiter()
 
 	def start(self, bot, update):
 		chat_id=update.message.chat_id
