@@ -13,11 +13,13 @@ def theme_day_constructor(name, desc=""):
 		desc=desc,
 		)
 
+DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+
 THEME_DAYS = [
 #0 - monday
 None,
 #1 - tuesday
-theme_day_constructor(name=u"🚫No English Tuesday🚫",
+theme_day_constructor(name=u"🚫🇬🇧🚫No English Tuesday🚫🇬🇧🚫",
 	desc="A day where we purposefully don't speak English as an exercise in practicing our target languages together.",
 	),
 #2 - wednesday

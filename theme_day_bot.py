@@ -32,7 +32,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 10)
+VERSION = (0, 1, 11)
 
 
 def seconds_till_next_day():
@@ -55,6 +55,7 @@ class ThemeDayBot(object):
 		self.dispatcher.add_handler(CommandHandler('help', self.help_function))
 		self.dispatcher.add_handler(CommandHandler('themedaylist', self.theme_day_list))
 		self.dispatcher.add_handler(CommandHandler('update', self.update_today_message))
+		#TODO: create command that removes "PIN THIS MESSAGE" text
 
 		self.dispatcher.add_error_handler(self.error_handler)
 
@@ -152,7 +153,11 @@ Thanks for running me, and have a good day!
 			+ (config.HELP_ADMINS if is_admin else ""))
 
 	def theme_day_list(self, bot, update):
-		msg = "\n".join(u"{0} - {1}".format(i['name'], i['desc']) for i in config.THEME_DAYS if i)
+		no_theme_text = "[NO THEME]"
+		day_messages = (u"{0} - {1}".format(i['name'], i['desc']) if i else no_theme_text for i in config.THEME_DAYS)
+		day_messages = (u"{0}: {1}".format(config.DAYS_OF_WEEK[n], i) for n, i in enumerate(day_messages))
+
+		msg = "\n\n".join(day_messages)
 		bot.sendMessage(chat_id=update.message.chat_id, text=msg)
 
 	def error_handler(self, bot, update, error):
@@ -190,6 +195,8 @@ Thanks for running me, and have a good day!
 			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
 		else:
 			msg = u"No theme today." 
+
+		msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
 
 		msg += "\n\nPIN THIS MESSAGE!" 
 
