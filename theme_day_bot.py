@@ -32,7 +32,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 11)
+VERSION = (0, 1, 12)
 
 
 def seconds_till_next_day():
@@ -54,7 +54,8 @@ class ThemeDayBot(object):
 		self.dispatcher.add_handler(CommandHandler('start', self.start))
 		self.dispatcher.add_handler(CommandHandler('help', self.help_function))
 		self.dispatcher.add_handler(CommandHandler('themedaylist', self.theme_day_list))
-		self.dispatcher.add_handler(CommandHandler('update', self.update_today_message))
+		self.dispatcher.add_handler(CommandHandler('update', self.update))
+		self.dispatcher.add_handler(CommandHandler('force_update', self.force_update))
 		#TODO: create command that removes "PIN THIS MESSAGE" text
 
 		self.dispatcher.add_error_handler(self.error_handler)
@@ -170,12 +171,19 @@ Thanks for running me, and have a good day!
 				self.pinned_message_id = None
 				self.check_set_theme_day(bot)
 
-	def update_today_message(self, bot, update):
+	def update(self, bot, update):
 		"""A command to update the today's message.
 		Most likely users won't have to use it, as the bot can update it automatically.
 		"""
 		if self.bot_is_setup:
 			self.check_set_theme_day(bot)
+
+	def force_update(self, bot, update):
+		"""Like /update, but it resends the message (and reassigns variables)
+		no matter what.
+		"""
+		if self.bot_is_setup:
+			self.check_set_theme_day(bot, force_resend=True)
 
 	def editPinnedMessage(self, bot, text):
 		# Prevents error that is raised when we try editing a message and applying the same text to it.
@@ -187,7 +195,20 @@ Thanks for running me, and have a good day!
 			else:
 				raise e
 
-	def check_set_theme_day(self, bot, job=None, force_schedule=False):
+	def check_set_theme_day(self, bot, job=None, force_schedule=False, force_resend=False):
+		"""
+		Sends message that is supposed to be pinned. Or updates it if it is already present.
+
+		job: this is not None if the function is called by job scheduler.
+		In that case, the job re-adds itself into the queue to be called the next day.
+
+		force_schedule: should be True only on bot initialization.
+		It adds a job to the cycle no matter the `job`.
+
+		force_resend: don't update the old message. 
+		Instead, send it again as if the previous were not available anymore.
+		"""
+
 		weekday = get_weekday()
 		theme_day = config.THEME_DAYS[weekday]
 
@@ -202,7 +223,7 @@ Thanks for running me, and have a good day!
 
 		# msg = str(time()) + msg # debug
 
-		if self.pinned_message_id:
+		if self.pinned_message_id and not force_resend:
 			self.editPinnedMessage(bot, text=msg)
 		else:
 			sent_message = bot.sendMessage(chat_id=self.group_chat_id, text=msg)
