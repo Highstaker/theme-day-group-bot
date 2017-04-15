@@ -32,7 +32,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 12)
+VERSION = (0, 1, 13)
 
 
 def seconds_till_next_day():
@@ -56,7 +56,7 @@ class ThemeDayBot(object):
 		self.dispatcher.add_handler(CommandHandler('themedaylist', self.theme_day_list))
 		self.dispatcher.add_handler(CommandHandler('update', self.update))
 		self.dispatcher.add_handler(CommandHandler('force_update', self.force_update))
-		#TODO: create command that removes "PIN THIS MESSAGE" text
+		self.dispatcher.add_handler(CommandHandler('pinned', self.pinned))
 
 		self.dispatcher.add_error_handler(self.error_handler)
 
@@ -67,6 +67,7 @@ class ThemeDayBot(object):
 		self.bot_is_setup = False
 
 		self.pinned_message_id = None
+		self.pinned = False  # is the message pinned? If yes, remove garbage from it.
 
 		self.load_chat_data()
 
@@ -85,6 +86,7 @@ class ThemeDayBot(object):
 				data = pickle.load(f)
 			self.group_chat_id = data['group_chat_id']
 			self.pinned_message_id = data['pinned_message_id']
+			self.pinned = data['message_is_pinned']
 			self.setup_bot(self.updater.bot)
 		except IOError:
 			logging.warning("No chat data savefile found. Need initialization!")
@@ -96,6 +98,7 @@ class ThemeDayBot(object):
 
 		data['pinned_message_id'] = self.pinned_message_id
 		data['group_chat_id'] = self.group_chat_id
+		data['message_is_pinned'] = self.pinned
 
 		with open(config.CHAT_DATA_FILENAME, "w") as f:
 			pickle.dump(data, f)
@@ -182,8 +185,17 @@ Thanks for running me, and have a good day!
 		"""Like /update, but it resends the message (and reassigns variables)
 		no matter what.
 		"""
-		if self.bot_is_setup:
-			self.check_set_theme_day(bot, force_resend=True)
+		if self.isAdmin(bot, update):
+			if self.bot_is_setup:
+				self.pinned = False
+				self.check_set_theme_day(bot, force_resend=True)
+
+	def pinned(self, bot, update):
+		if self.isAdmin(bot, update):
+			if self.bot_is_setup:
+				self.pinned = True
+				self.save_chat_data()
+				self.check_set_theme_day(bot)
 
 	def editPinnedMessage(self, bot, text):
 		# Prevents error that is raised when we try editing a message and applying the same text to it.
@@ -219,7 +231,13 @@ Thanks for running me, and have a good day!
 
 		msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
 
-		msg += "\n\nPIN THIS MESSAGE!" 
+		if not self.pinned:
+			msg += "\n\nPIN THIS MESSAGE and press /pinned!" 
+
+			# poke admins so they would pin the message
+			msg += "\n\n" + " ".join(
+				"@{}".format(i.user.username) for i in bot.getChatAdministrators(self.group_chat_id)
+				)
 
 		# msg = str(time()) + msg # debug
 
@@ -228,6 +246,7 @@ Thanks for running me, and have a good day!
 		else:
 			sent_message = bot.sendMessage(chat_id=self.group_chat_id, text=msg)
 			self.pinned_message_id = sent_message.message_id
+			self.pinned = False
 			self.save_chat_data()
 
 		if job or force_schedule:

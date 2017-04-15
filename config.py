@@ -43,4 +43,6 @@ HELP_TEXT = """Commands that can be used are:
 #This will be added to HELP_TEXT if the user is an admin.
 HELP_ADMINS = """
 /start - starts the bot (Admins Only)
+/pinned - equivalent to /update, except it sets the flag to remove the auxiliary text (like "PIN THIS MESSAGE").
+/force_update - resend the message in any case, don't update the old one even if it is available.
 """
