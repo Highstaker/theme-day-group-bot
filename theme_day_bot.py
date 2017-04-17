@@ -7,6 +7,8 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
+#TODO: send a message in the beginning of every day. If the next day has no theme, say the previous has ended.
+#TODO: if there are two days with no theme in a row, don't send messages.
 import os
 from time import time
 import logging
@@ -32,7 +34,7 @@ logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(leve
 					level=logging_level)
 
 
-VERSION = (0, 1, 13)
+VERSION = (0, 2, 0)
 
 
 def seconds_till_next_day():
