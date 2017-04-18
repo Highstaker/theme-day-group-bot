@@ -4,7 +4,8 @@
 with open("token.txt", 'r') as f:
 	BOT_TOKEN = f.read().strip()
 
-DAY_MARGIN = 5  # seconds to add to the next day to guarantee that it fires the next day
+DAY_MARGIN = 2  # seconds to add to the next day to guarantee that it fires the next day
+JOB_INTERVAL = 60  # seconds between checks of the next day
 
 CHAT_DATA_FILENAME = "chat_data.save"
 THEME_DAYS_FILENAME = "theme_days.csv"

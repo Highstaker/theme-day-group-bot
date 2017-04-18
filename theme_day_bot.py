@@ -37,7 +37,7 @@ from telegram.ext import Updater, CommandHandler, Job, JobQueue
 import config
 from theme_days import THEME_DAYS
 
-VERSION = (0, 2, 1)
+VERSION = (0, 2, 2)
 
 
 def seconds_till_next_day():
@@ -66,6 +66,8 @@ class ThemeDayBot(object):
 
 		self.dispatcher.add_error_handler(self.error_handler)
 
+		self.current_weekday = get_weekday()
+
 		# queue handling new day notification tasks
 		self.new_day_notify_job_queue = JobQueue(self.updater.bot)
 		self.new_day_notify_job_queue.start()
@@ -83,7 +85,7 @@ class ThemeDayBot(object):
 		if chat_id:
 			self.group_chat_id = chat_id
 		# self.save_chat_data() # not needed in this version, but may be required in the future
-		self.check_set_theme_day(bot, force_schedule=True)
+		self.reset_job()
 		self.bot_is_setup = True
 
 	def load_chat_data(self):
@@ -213,15 +215,25 @@ Thanks for running me, and have a good day!
 			else:
 				raise e
 
-	def check_set_theme_day(self, bot, job=None, force_schedule=False, force_resend=False):
+	def reset_job(self):
+		"""Resets the job to either hard interval or time left until next day"""
+		#TODO: check if the queue gets contaminated with done jobs
+		interval = min(seconds_till_next_day()+config.DAY_MARGIN, config.JOB_INTERVAL)
+		next_job = Job(self.job_callback, interval=interval, repeat=False)
+		self.new_day_notify_job_queue.put(next_job)
+
+	def job_callback(self, bot, job):
+		# Check if it is the next day
+		if self.current_weekday != get_weekday():
+			self.check_set_theme_day(bot)
+			self.current_weekday = get_weekday()
+		else:
+			logging.info("The day is the same, the job did not do anything")
+		self.reset_job()
+
+	def check_set_theme_day(self, bot, force_resend=False):
 		"""
 		Sends message that is supposed to be pinned. Or updates it if it is already present.
-
-		job: this is not None if the function is called by job scheduler.
-		In that case, the job re-adds itself into the queue to be called the next day.
-
-		force_schedule: should be True only on bot initialization.
-		It adds a job to the cycle no matter the `job`.
 
 		force_resend: don't update the old message. 
 		Instead, send it again as if the previous were not available anymore.
@@ -230,21 +242,18 @@ Thanks for running me, and have a good day!
 		weekday = get_weekday()
 		theme_day = THEME_DAYS[weekday]
 
+		# compiling the message
 		if theme_day:
 			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
 		else:
 			msg = u"No theme today." 
-
 		msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
-
 		if not self.pinned:
 			msg += "\n\nPIN THIS MESSAGE and press /pinned!" 
-
 			# poke admins so they would pin the message
 			msg += "\n\n" + " ".join(
 				"@{}".format(i.user.username) for i in bot.getChatAdministrators(self.group_chat_id)
 				)
-
 		# msg = str(time()) + msg # debug
 
 		if self.pinned_message_id and not force_resend:
@@ -254,12 +263,6 @@ Thanks for running me, and have a good day!
 			self.pinned_message_id = sent_message.message_id
 			self.pinned = False
 			self.save_chat_data()
-
-		if job or force_schedule:
-			# reset the job only if it is run by a job scheduler
-			interval = seconds_till_next_day()+config.DAY_MARGIN
-			next_job = Job(self.check_set_theme_day, interval=interval, repeat=False)
-			self.new_day_notify_job_queue.put(next_job)
 
 if __name__ == '__main__':
 	ThemeDayBot()
