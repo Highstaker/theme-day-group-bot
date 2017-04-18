@@ -7,19 +7,17 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
+#TODO: remake the timing. Check it every minute and set next job with min(60, seconds_till_next_day())
+
 #TODO: send a message in the beginning of every day. If the next day has no theme, say the previous has ended.
 #TODO: if there are two days with no theme in a row, don't send messages.
+
+import logging
 import os
 from time import time
-import logging
 from datetime import datetime, timedelta
 import pickle
 from argparse import ArgumentParser
-
-from telegram import TelegramError
-from telegram.ext import Updater, CommandHandler, Job, JobQueue
-
-import config
 
 arg_parser = ArgumentParser()
 arg_parser.add_argument("--debug",  action='store_true', dest="debug_mode")
@@ -33,13 +31,19 @@ else:
 logging.basicConfig(format=u'[%(asctime)s] %(filename)s[LINE:%(lineno)d]# %(levelname)-8s  %(message)s',
 					level=logging_level)
 
+from telegram import TelegramError
+from telegram.ext import Updater, CommandHandler, Job, JobQueue
 
-VERSION = (0, 2, 0)
+import config
+from theme_days import THEME_DAYS
+
+VERSION = (0, 2, 1)
 
 
 def seconds_till_next_day():
 	cur_time = datetime.now()
 	result = (cur_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1) - cur_time).seconds
+	logging.debug("Seconds left till next day: {}".format(result))
 	return result
 
 def get_weekday():
@@ -160,7 +164,7 @@ Thanks for running me, and have a good day!
 
 	def theme_day_list(self, bot, update):
 		no_theme_text = "[NO THEME]"
-		day_messages = (u"{0} - {1}".format(i['name'], i['desc']) if i else no_theme_text for i in config.THEME_DAYS)
+		day_messages = (u"{0} - {1}".format(i['name'], i['desc']) if i else no_theme_text for i in THEME_DAYS)
 		day_messages = (u"{0}: {1}".format(config.DAYS_OF_WEEK[n], i) for n, i in enumerate(day_messages))
 
 		msg = "\n\n".join(day_messages)
@@ -224,7 +228,7 @@ Thanks for running me, and have a good day!
 		"""
 
 		weekday = get_weekday()
-		theme_day = config.THEME_DAYS[weekday]
+		theme_day = THEME_DAYS[weekday]
 
 		if theme_day:
 			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
