@@ -9,13 +9,12 @@
 
 import logging
 import os
-from time import time
 from datetime import datetime, timedelta
 import pickle
 from argparse import ArgumentParser
 
 arg_parser = ArgumentParser()
-arg_parser.add_argument("--debug",  action='store_true', dest="debug_mode")
+arg_parser.add_argument("--debug", action='store_true', dest="debug_mode")
 args = arg_parser.parse_args()
 
 if args.debug_mode:
@@ -40,6 +39,7 @@ def seconds_till_next_day():
 	result = (cur_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1) - cur_time).seconds
 	logging.debug("Seconds left till next day: {}".format(result))
 	return result
+
 
 def get_weekday():
 	return datetime.now().weekday()
@@ -120,7 +120,7 @@ class ThemeDayBot(object):
 		Returns True if the user in the update is admin. False otherwise.
 		Returns None if it is not a group chat.
 		"""
-		chat_id=update.message.chat_id
+		chat_id = update.message.chat_id
 		if chat_id < 0:
 			admins_list = bot.getChatAdministrators(chat_id)  # raises error in private chats
 			user_sent = update.message.from_user
@@ -130,16 +130,15 @@ class ThemeDayBot(object):
 		else:
 			return None
 
-
 	def start(self, bot, update):
-		chat_id=update.message.chat_id
+		chat_id = update.message.chat_id
 
-		if chat_id>0:
-			#it is a private chat
+		if chat_id > 0:
+			# it is a private chat
 			msg = "This bot is supposed to be run in a supergroup chat."
 			bot.sendMessage(chat_id=chat_id, text=msg)
 		else:
-			#it is a group chat
+			# it is a group chat
 			is_admin = self.isAdmin(bot, update)
 
 			if is_admin:
@@ -156,7 +155,7 @@ Thanks for running me, and have a good day!
 
 	def help_function(self, bot, update):
 		is_admin = self.isAdmin(bot, update)
-		bot.sendMessage(chat_id=update.message.chat_id, text=config.HELP_TEXT \
+		bot.sendMessage(chat_id=update.message.chat_id, text=config.HELP_TEXT
 			+ (config.HELP_ADMINS if is_admin else ""))
 
 	def theme_day_list(self, bot, update):
@@ -171,9 +170,9 @@ Thanks for running me, and have a good day!
 		if update:
 			logging.warning('Update "%s" caused error "%s"' % (update, error))
 			if "/update" in update.message.text:
-				#the message to edit is no longer available, let's make a new one.
-				#I'm not sure about the particular errors it may raise
-				#Maybe the condition checking needs to be expanded, dunno
+				# the message to edit is no longer available, let's make a new one.
+				# I'm not sure about the particular errors it may raise
+				# Maybe the condition checking needs to be expanded, dunno
 				self.pinned_message_id = None
 				self.check_set_theme_day(bot)
 
@@ -200,7 +199,7 @@ Thanks for running me, and have a good day!
 				self.save_chat_data()
 				self.check_set_theme_day(bot)
 
-	def editPinnedMessage(self, bot, text):
+	def edit_pinned_message(self, bot, text):
 		# Prevents error that is raised when we try editing a message and applying the same text to it.
 		# Returns status 0, if modificaton occured, status 1 if the message is the same
 		try:
@@ -216,7 +215,7 @@ Thanks for running me, and have a good day!
 
 	def reset_job(self):
 		"""Resets the job to either hard interval or time left until next day"""
-		interval = min(seconds_till_next_day()+config.DAY_MARGIN, config.JOB_INTERVAL)
+		interval = min(seconds_till_next_day() + config.DAY_MARGIN, config.JOB_INTERVAL)
 		next_job = Job(self.job_callback, interval=interval, repeat=False)
 		self.new_day_notify_job_queue.put(next_job)
 
@@ -245,6 +244,8 @@ Thanks for running me, and have a good day!
 		bot: needed to get admins in "pinned"
 		"""
 		theme_day = THEME_DAYS[weekday]
+
+		msg = ""
 
 		if message_type == "pinned":
 			if theme_day:
@@ -289,7 +290,6 @@ Thanks for running me, and have a good day!
 			msg = self.compile_message(prev_day, message_type="info_end")
 			bot.sendMessage(chat_id=self.group_chat_id, text=msg)
 
-
 	def check_set_theme_day(self, bot, force_resend=False):
 		"""
 		Sends message that is supposed to be pinned. Or updates it if it is already present.
@@ -304,7 +304,7 @@ Thanks for running me, and have a good day!
 		msg = self.compile_message(weekday, message_type="pinned", bot=bot)
 
 		if self.pinned_message_id and not force_resend:
-			edit_status = self.editPinnedMessage(bot, text=msg)
+			edit_status = self.edit_pinned_message(bot, text=msg)
 			if edit_status == 0:
 				self.check_send_info_message(bot)
 		else:

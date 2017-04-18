@@ -6,29 +6,31 @@ from inspect import getargspec
 
 from config import THEME_DAYS_FILENAME, DAYS_OF_WEEK
 
+
 def theme_day_constructor(name=None, desc=None):
 	return dict(name=name,
 		desc=desc if desc else "",
 		) if name else None
 
 THEME_DAYS = [
-#0 - monday
+# 0 - monday
 None,
-#1 - tuesday
+# 1 - tuesday
 theme_day_constructor(name=u"🚫🇬🇧🚫No English Tuesday🚫🇬🇧🚫",
 	desc="A day where we purposefully don't speak English as an exercise in practicing our target languages together.",
 	),
-#2 - wednesday
+# 2 - wednesday
 None,
-#3 - thursday
+# 3 - thursday
 None,
-#4 - friday
+# 4 - friday
 None,
-#5 - saturday
+# 5 - saturday
 None,
-#6 - sunday
+# 6 - sunday
 None,
 ]
+
 
 def load_from_file():
 	try:
@@ -44,12 +46,12 @@ def load_from_file():
 
 				# ['name', 'desc']
 				constructor_args = getargspec(theme_day_constructor).args
-				params = [None]*len(constructor_args)
+				params = [None] * len(constructor_args)
 				try:
 					for n, el in enumerate(parse):
 						params[n] = el
 				except IndexError:
-					logging.info("Not all data is specified for {}".format(DAYS_OF_WEEK[n]))
+					logging.info("Not all data is specified for {}".format(DAYS_OF_WEEK[day_n]))
 
 				THEME_DAYS[day_n] = theme_day_constructor(*params)
 			logging.debug("THEME_DAYS: {}".format(THEME_DAYS))

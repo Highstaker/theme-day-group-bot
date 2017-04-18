@@ -18,7 +18,7 @@ HELP_TEXT = """Commands that can be used are:
 /update - updates the pinned message. If the pinned message is not accessible, the bot resends it and asks to pin it.
 """
 
-#This will be added to HELP_TEXT if the user is an admin.
+# This will be added to HELP_TEXT if the user is an admin.
 HELP_ADMINS = """
 /start - starts the bot (Admins Only)
 /pinned - equivalent to /update, except it sets the flag to remove the auxiliary text (like "PIN THIS MESSAGE").
