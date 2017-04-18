@@ -7,11 +7,6 @@
 #    Authors: @LucianLutrae @Highstaker
 #############################################
 
-#TODO: remake the timing. Check it every minute and set next job with min(60, seconds_till_next_day())
-
-#TODO: send a message in the beginning of every day. If the next day has no theme, say the previous has ended.
-#TODO: if there are two days with no theme in a row, don't send messages.
-
 import logging
 import os
 from time import time
@@ -37,7 +32,7 @@ from telegram.ext import Updater, CommandHandler, Job, JobQueue
 import config
 from theme_days import THEME_DAYS
 
-VERSION = (0, 2, 2)
+VERSION = (0, 2, 3)
 
 
 def seconds_till_next_day():
@@ -207,17 +202,20 @@ Thanks for running me, and have a good day!
 
 	def editPinnedMessage(self, bot, text):
 		# Prevents error that is raised when we try editing a message and applying the same text to it.
+		# Returns status 0, if modificaton occured, status 1 if the message is the same
 		try:
 			bot.editMessageText(text=text, chat_id=self.group_chat_id, message_id=self.pinned_message_id)
+			status = 0
 		except TelegramError, e:
 			if "message is not modified" in str(e):
 				logging.warning("message is the same")
+				status = 1
 			else:
 				raise e
+		return status
 
 	def reset_job(self):
 		"""Resets the job to either hard interval or time left until next day"""
-		#TODO: check if the queue gets contaminated with done jobs
 		interval = min(seconds_till_next_day()+config.DAY_MARGIN, config.JOB_INTERVAL)
 		next_job = Job(self.job_callback, interval=interval, repeat=False)
 		self.new_day_notify_job_queue.put(next_job)
@@ -231,6 +229,67 @@ Thanks for running me, and have a good day!
 			logging.info("The day is the same, the job did not do anything")
 		self.reset_job()
 
+	def compile_message(self, weekday, message_type="pinned", bot=None):
+		"""
+		Compiles a message about the theme day
+
+		weekday: for which weekday the message should be compiled
+
+		message type: what kind of message
+		"pinned" is supposed to be pinned
+		"info" is sent at the beginning of a day, just a notification, not for pinning
+		It is sent when the new day has a theme.
+		"info_end" is sent if the previous day had a theme but a new one doesn't.
+		Notifies about the end of theme day, in other words. `weekday` is the previous day
+
+		bot: needed to get admins in "pinned"
+		"""
+		theme_day = THEME_DAYS[weekday]
+
+		if message_type == "pinned":
+			if theme_day:
+				msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
+			else:
+				msg = u"No theme today."
+			msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
+			if not self.pinned:
+				msg += "\n\nPIN THIS MESSAGE and press /pinned!"
+				# poke admins so they would pin the message
+				msg += "\n\n" + " ".join(
+					"@{}".format(i.user.username) for i
+					in bot.getChatAdministrators(self.group_chat_id)
+					)
+			# msg = str(time()) + msg # debug
+		elif message_type == "info":
+			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
+			msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
+		elif message_type == "info_end":
+			msg = u"{0}\nThis day has ended!\nThere is no theme today!".format(
+				theme_day['name'], theme_day['desc'])
+
+		return msg
+
+	def check_send_info_message(self, bot):
+		"""
+		Sends an info message about the new day.
+		If the new day is theme-less, says that the previous day has ended.
+		If both the previous and new days are themeless, does nothing.
+		Assumes that the new day has already come.
+		"""
+		new_day = get_weekday()
+		prev_day = (new_day - 1) % 7
+
+		if THEME_DAYS[new_day]:
+			# if the new day has a theme, it doesn't matter whether the old one had it or not
+			# just send the info message about the new day
+			msg = self.compile_message(new_day, message_type="info")
+			bot.sendMessage(chat_id=self.group_chat_id, text=msg)
+		if not THEME_DAYS[new_day] and THEME_DAYS[prev_day]:
+			# send notification about the end of the theme day
+			msg = self.compile_message(prev_day, message_type="info_end")
+			bot.sendMessage(chat_id=self.group_chat_id, text=msg)
+
+
 	def check_set_theme_day(self, bot, force_resend=False):
 		"""
 		Sends message that is supposed to be pinned. Or updates it if it is already present.
@@ -240,24 +299,14 @@ Thanks for running me, and have a good day!
 		"""
 
 		weekday = get_weekday()
-		theme_day = THEME_DAYS[weekday]
 
 		# compiling the message
-		if theme_day:
-			msg = u"{0}\n{1}".format(theme_day['name'], theme_day['desc'])
-		else:
-			msg = u"No theme today." 
-		msg = config.DAYS_OF_WEEK[weekday] + ": " + msg
-		if not self.pinned:
-			msg += "\n\nPIN THIS MESSAGE and press /pinned!" 
-			# poke admins so they would pin the message
-			msg += "\n\n" + " ".join(
-				"@{}".format(i.user.username) for i in bot.getChatAdministrators(self.group_chat_id)
-				)
-		# msg = str(time()) + msg # debug
+		msg = self.compile_message(weekday, message_type="pinned", bot=bot)
 
 		if self.pinned_message_id and not force_resend:
-			self.editPinnedMessage(bot, text=msg)
+			edit_status = self.editPinnedMessage(bot, text=msg)
+			if edit_status == 0:
+				self.check_send_info_message(bot)
 		else:
 			sent_message = bot.sendMessage(chat_id=self.group_chat_id, text=msg)
 			self.pinned_message_id = sent_message.message_id
