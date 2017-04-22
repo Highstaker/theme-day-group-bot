@@ -1,38 +1,38 @@
 
-#Theme day bot
+# Theme day bot
 
-##Overview
+## Overview
 
 This bot sets themes for the group chat.
 
-##Deployment
+## Deployment
 
-###Tested systems
+### Tested systems
 
 This bot has been tested on Ubuntu 14.04 and Python 2.7
 
-###Dependencies
+### Dependencies
 
 To install requirements, run
 ```
 pip2 install -r requirements.txt
 ```
 
-##Installation
+## Installation
 
-###Setting up the bot token
+### Setting up the bot token
 
 Create a file called `token.txt` and put it into the folder with the bot. Input (or copy/paste) the bot token in it.
 
-###Setting up the theme days
+### Setting up the theme days
 
 Perform `cp theme_days.csv.sample theme_days.csv` and edit the new file. The fields are separated by `@@`. The first field is the day of week, it's just for convenience and is ignored by the program. The second field is the name of a theme day. The third field is its detailed description, it is optional. In the sample, Monday and Tuesday have both a name and a description. Thursday has only a name. Other days are themeless.
 
-###Tieing to group
+### Tieing to group
 
 Use `/start` command to tie the bot to your group. It will send a hello message and a message with today's theme. The admin should pin it and issue a `/pinned` command. This will update the message, removing the garbage, like "PIN THIS MESSAGE" text and mentions of admins. From this point onwards, the bot will update the pinned message every day automatically, whenever it is required.
 
-##Bot's behaviour
+## Bot's behaviour
 
 The bot updates the pinned message every day at midnight UTC, when required. 
 
