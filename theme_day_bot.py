@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 #############################################
-#    Theme day bot code for Polyglot Furries
+#    Theme day bot
 #    Date of last update: 29/03/2017
 #    Authors: @LucianLutrae @Highstaker
 #############################################
@@ -146,8 +146,7 @@ class ThemeDayBot(object):
 					msg = "The bot is already set up!"
 				else:
 					self.setup_bot(bot, chat_id)
-					msg = """Hello, I am a bot that sets theme days for the Polyglot Furries Channel! 
-I have been set up to run this group! 
+					msg = """I have been set up to run this group! 
 Thanks for running me, and have a good day!
 """
 
