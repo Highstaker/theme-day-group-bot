@@ -31,7 +31,7 @@ from telegram.ext import Updater, CommandHandler, Job, JobQueue
 import config
 from theme_days import THEME_DAYS
 
-VERSION = (0, 2, 4)
+VERSION = (0, 2, 5)
 
 
 def seconds_till_next_day():
@@ -98,6 +98,8 @@ class ThemeDayBot(object):
 			self.pinned_message_id = None
 		except EOFError:
 			logging.warning("Chat data savefile might be corrupted! Need initialization!")
+			self.group_chat_id = None
+			self.pinned_message_id = None
 
 	def save_chat_data(self):
 		data = dict()
